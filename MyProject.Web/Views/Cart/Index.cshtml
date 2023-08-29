@@ -1,0 +1,382 @@
+﻿@model MyProject.ViewModel.OrderDTO
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+}
+
+@section scripts{
+    @*<script src="~/js/cart.js"></script>*@
+    @*<script>
+        var cartController = new CartController();
+        cartController.initialize();
+    </script>*@
+    <script>
+        const nf = new Intl.NumberFormat();
+        $(document).ready(function () {
+            getListItem();
+            $('#quaylai').click(function () {
+                console.log("haha");
+            })
+
+            $("#btn-thanhtoan2").click(function(){
+                createOrder()
+            })
+
+            $("#btn-muahang").click(function(){
+                let length = $("#lbl_number_of_items_header").html()
+                console.log(length)
+                if(length === '0'){
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Lỗi',
+                        text: 'Không có sản phẩm nào trong giỏ hàng',
+                    })
+                }
+                else{
+                    $("#li-step2").addClass("activated");
+                    $("#step1").removeClass("show")
+                    $("#step1").addClass("hide")
+                    $("#step2").removeClass("hide")
+                    $("#step2").addClass("show")
+                }
+                
+            })
+
+            $("#quaylai").click(function(){
+                $("#step1").removeClass("hide")
+                $("#step1").addClass("show")
+                $("#step2").removeClass("show")
+                $("#step2").addClass("hide")
+            })
+
+            $("#quaylai2").click(function () {
+                $("#step2").removeClass("hide")
+                $("#step2").addClass("show")
+                $("#step3").removeClass("show")
+                $("#step3").addClass("hide")
+            })
+
+            $("#form-thanhtoan").validate({
+                rules: {
+                    fullName: {
+                        required: true
+                    },
+                    address: {
+                        required: true
+                    },
+                    phone: {
+                        required: true,
+                        maxlength: 10,
+                        minlength: 10
+                    },
+                },
+                messages: {
+                    fullName: {
+                        required: "Tên không được để trống"
+                    },
+                    phone: {
+                        required: "Số điện thoại không được để trống",
+                        maxlength: "Số điện thoại phải có 10 ký tự",
+                        minlength: "Số điện thoại phải có 10 ký tự"
+                    },
+                    address: {
+                        required: "Địa chỉ không được để trống"
+                    }
+                }
+            })
+
+            $("#btn-thanhtoan").click(function(){
+                //alert("haha")
+                if($("#form-thanhtoan").valid()){
+                    $("#li-step3").addClass("active");
+                    $("#step3").removeClass("hide")
+                    $("#step3").addClass("show")
+                    $("#step2").removeClass("show")
+                    $("#step2").addClass("hide")
+                }
+            })
+        });
+
+        function createOrder() {
+            var order = {
+                Name: $('#fullName-receiver').val(),
+                Address: $('#address-receiver').val(),
+                PhoneNumber: $('#phone-receiver').val(),
+                Type: $('input[name="inlineRadioOptions"]:checked').val()
+            };
+            $.ajax({
+                url: '/Cart/CreateOrder',
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    model: JSON.stringify(order)
+                },
+                success: function (res) {
+                    if(res.status == false){
+                        Swal.fire(
+                            'Thông báo!',
+                            'Vui lòng đăng nhập để tiếp tục',
+                            'error'
+                        )
+
+                        setTimeout(() => { location.href = "/Identity/Account/Login" }, 2000)
+                    }
+                    else{
+                        $.ajax({
+                            url: '/Cart/DeleteAll',
+                            type: 'POST',
+                            success: function(){
+                                $('#lbl_number_of_items_header').text('0');
+                            }
+                        })
+                        Swal.fire(
+                            'Thông báo!',
+                            'Mua hàng thành công!',
+                            'success'
+                        )
+                    }
+                }
+            });
+        }
+
+        function xoa(id, mau) {
+            Swal.fire({
+                title: 'Thông báo',
+                text: "Bạn có chắc chắn muốn xóa không?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Xóa!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        type: "GET",
+                        url: "/Cart/RemoveItem",
+                        data: { id: id, mau: mau },
+                        success: function (res) {
+                            $('#lbl_number_of_items_header').text(res.length);
+                            getListItem()
+                            Swal.fire(
+                                'Thông Báo!',
+                                'Xóa sản phẩm khỏi giỏ hàng thành công',
+                                'success'
+                            )
+                        }
+                    })
+                }
+            })
+        }
+
+        function getListItem() {
+            return $.ajax({
+                type: "GET",
+                url: "/Cart/GetListItem",
+                success: function (data) {
+                    $("#body").empty()
+                    let total = 0;
+                    if (data.length === 0) {
+                        let html =
+                            `<tr>` +
+                            `<td colspan="4">Không có sản phẩm nào trong giỏ hàng</td>` +
+                            `</tr>`
+                        $("#body").append(html);
+                    }
+                    data.forEach(function (item) {
+                        let price = nf.format(item.price)
+                        let html =
+                            `<tr class="cart_item">` +
+                            `<td class="cart_item_name">` +
+                            `<div class="glass_name">` +
+                            `<a href="#">${item.name}</a>` +
+                            `</div>` +
+                            `</td>` +
+                            `<td class="cart_item_price">` +
+                            `${price}` +
+                            `</td>` +
+                            `<td class="cart_item_price">` +
+                            `${item.color}` +
+                            `</td>` +
+                            `<td class="cart_item_quantity">` +
+                            `<div class="quantity-icon-action">` +
+                            `<span class="quantity-number" id="quantity-number">1</span>` +
+                            ` </div>` +
+                            `</td>` +
+                            `<td id="cart_item_total">` +
+                            `${price}` +
+                            `</td>` +
+                            `<td class="delete_cart_item">` +
+                            //`<div data-id='${item.productId}' class="delete-cart"><i class="fa-solid fa-trash-can"></i></div>` +
+                            `<button class="btn btn-danger" onclick="xoa(${item.productId}, '${item.color}')">Xóa</button>` +
+                            `</tr>`;
+                        $("#body").append(html);
+                        total = Number(total) + Number(item.price);
+                    })
+                    $(".cart-price").html(nf.format(total) + ' VND')
+                }
+            });
+        }
+    </script>
+}
+    <main>
+        <div class="page_banner">
+            <div class="page_title">
+                <h1>Giỏ hàng</h1>
+                <ol class="bread_crumb">
+                    <li><a href="">Trang chủ</a></li>
+                    <li><a href="">Giỏ hàng</a></li>
+                </ol>
+            </div>
+        </div>
+
+        <section class="wizard-section">
+            <div class="row no-gutters">
+                <div class="">
+                    <div class="form-wizard">
+                        <!-- <form action="" method="post" role="form"> -->
+                        <div class="form-wizard-header">
+                            <ul class="list-unstyled form-wizard-steps clearfix">
+                                <li class="active" id="li-step1"><span><i class="bi bi-basket"></i></span></li>
+                                <li id="li-step2" class=""><span><i class="bi bi-person-check"></i></span></l>
+                                <li id="li-step3"><span><i class="bi bi-check-lg"></i></span></li>
+                                <!-- <li><span>4</span></li> -->
+                            </ul>
+                        </div>
+                        <fieldset class="wizard-fieldset show" id="step1">
+                            <div class="container">
+                                <div class="row">
+                                    <div class="list-item col-lg-9">
+                                        <table style="width: 800px;">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 100px">Sản phẩm</th>
+                                                    <th>Giá</th>
+                                                    <th>Màu</th>
+                                                    <th>Số lượng</th>
+                                                    <th>Thành tiền</th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="body">
+                                            </tbody>
+                                        </table>
+
+                                    </div>
+                                    <div class="total-price col-lg-3">
+
+                                        <p>
+                                            <span>Thành tiền</span>
+                                            <span class="cart-price" style="color: #ff871d;"></span>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- <div class="form-group clearfix">
+
+                                    <a href="products.html" class="form-wizard-previous-btn float-left">Tiếp tục mua
+                                        hàng</a>
+                                    <a href="javascript:;" class="form-wizard-next-btn float-right">Thanh toán</a>
+                                </div> -->
+                                <div class="row mt-4">
+                                    <div>
+                                        <button type="button" id="btn-muahang"
+                                            class="form-wizard-next-btn">
+                                            Mua Hàng
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                        <fieldset class="wizard-fieldset hide" id="step2">
+                            <div class="container">
+                                <div class="col-8 ">
+                                    <h5>Thông tin người nhận</h5>
+                                    <form id="form-thanhtoan">
+                                        <div class="form-group">
+                                            <label for="fullName-receiver">Tên người nhận</label>
+                                            <input type="text" class="form-control" id="fullName-receiver"
+                                               name="fullName" placeholder="Họ và tên" required autofocus>
+                                            <span id="message-error"></span>
+                                            
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="phone-receiver">Số điện thoại</label>
+                                            <input type="number" class="form-control" id="phone-receiver"
+                                               name="phone" placeholder="Số điện thoại" required>
+                                            
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="address-receiver">Địa chỉ</label>
+                                            <input type="text" class="form-control" id="address-receiver"
+                                               name="address" placeholder="Địa chỉ">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="note-receiver">Ghi chú</label>
+                                            <textarea name="" id="" cols="100" rows="5" class="form-control"
+                                                  placeholder="Ghi chú" id="note-receiver"
+                                                  name="note-receiver"></textarea>
+                                            
+                                        </div>
+                                        <div class="form-group clearfix">
+                                            <a href="javascript:;" class="form-wizard-previous-btn float-left" id="quaylai">
+                                                Quay
+                                                lại
+                                            </a>
+                                            <button type="button" id="btn-thanhtoan"
+                                                class="form-wizard-next-btn float-right">
+                                                Tiếp theo
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            <script>
+                                function check() {
+                                    var pattern = /^[a-z_]{3,20}$/i;
+                                    var fullname = document.getElementById('fullName-receiver').value;
+                                    if (pattern.test(fullname)) {
+                                        alert('Lỗi');
+                                    }
+                                }
+                            </script>
+                        </fieldset>
+                        <fieldset class="wizard-fieldset hide" id="step3">
+                            <div class="container">
+                                <div class="container">
+                                    <div class="col-8 ">
+                                        <h5>Phương thức thanh toán</h5>
+                                        <form id="form-phuongthuc">
+                                            <div class="form-group">
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1" value="offline" checked>
+                                                    <label class="form-check-label" for="inlineRadio1">Thanh toán khi nhận hàng</label>
+                                                </div>
+                                                @*<div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2" value="online">
+                                                    <label class="form-check-label" for="inlineRadio2">Thanh toán bằng Momo</label>
+                                                </div>*@
+                                            </div>
+
+                                            <div class="form-group clearfix">
+                                                <a href="javascript:;" class="form-wizard-previous-btn float-left" id="quaylai2">
+                                                    Quay
+                                                    lại
+                                                </a>
+                                                <button type="button" id="btn-thanhtoan2"
+                                                    class="form-wizard-next-btn float-right">
+                                                    Thanh toán
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        </fieldset>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>

@@ -1,0 +1,428 @@
+﻿@using System.Globalization
+@using MyProject.Data.EF
+@using Service.Interface
+@using System.Security.Claims
+@model MyProject.ViewModel.ProductDTO
+@inject IMediasService mediasService
+@inject IReviewsAndWishListService reviewService
+@inject AppDbContext context
+
+@{
+    ViewData["Title"] = "Chi Tiết Sản Phẩm";
+    int id = Model.Id;
+    var listImage = mediasService.GetMediasByProductId(id);
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "";
+    var listReview = reviewService.GetReview(filter: p => p.ReviewsDetails != null && p.ProductId == id, includeProperties: "User");
+    var checkWishList = reviewService.IsWishList(userId, id);
+    var i = 1;
+    var listGia = context.GiaXes.Where(x => x.ProductId == id).ToList();
+}
+<div class="page_banner">
+    <div class="page_title">
+        <h1>Chi tiết sản phẩm</h1>
+    </div>
+</div>
+
+<div class="container-fluid mt-5 mb-5 details">
+    <div class="row d-flex justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="images p-3">
+                            <div class="text-center p-4"> <img id="main-image" src="~/img/@Model.Thumbnail" width="250" /> </div>
+                            <div class="thumbnail text-center">
+                                @foreach (var item in listImage)
+                                {
+                                    <img onclick="change_image(this)" src="~/img/@item.Name" width="70">
+                                }
+                                @*<img onclick="change_image(this)" src="https://i.imgur.com/Rx7uKd0.jpg" width="70"> <img onclick="change_image(this)" src="https://i.imgur.com/Dhebu4F.jpg" width="70"> *@
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="product p-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                            </div>
+                            <div class="sizes">
+                                @if (Model.Trending)
+                                {
+                                    <button class="btn btn-danger">Xe Hot</button>
+                                }
+                            </div>
+                            <div class="mt-4 mb-3">
+                                <span class="text-uppercase text-muted brand">Hãng Xe: @Model.Shop.ShopName</span>
+                                <h5 class="text-uppercase" style="font-size: 30px; font-weight: 900">@Model.ProductName</h5>
+                                <div class="price d-flex flex-row align-items-center">
+                                    <span class="act-price" style="font-size: 25px">Giá: <span id="gia-xe"></span>@*@Model.Price.ToString("N00", new CultureInfo("en-us"))*@</span>
+                                    @*<div class="ml-2"> <small class="dis-price">$59</small> <span>40% OFF</span> </div>*@
+                                </div>
+                                <div class="d-flex justify-content-left">
+                                    @foreach (var item in listGia)
+                                    {
+                                        <div style="margin-right: 10px;">
+                                            <button class="btn btn-outline-success gia" data-gia="@item.Gia" data-mau="@item.MauXe">@item.MauXe</button>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            <div id="detail">
+                            </div>
+                            <div class="sizes mb-3">
+                                Lượt truy cập: @Model.Views
+                            </div>
+                            <div class="special-offer">
+                                <h5 class="offer-title">
+                                    Ưu đãi đặc biệt
+                                </h5>
+                                <ul>
+                                    <li>Có sẵn</li>
+                                    <li>Giao hàng, vận chuyển miễn phí</li>
+                                    <li>Giảm Giá 30% với mã: Deal30</li>
+                                </ul>
+                            </div>
+                            @*@if(checkWishList == false){
+                            <div class="cart mt-4 align-items-center">
+                            <button class="btn btn-primary text-uppercase mr-2 px-4" id="addWishList">Add to WishList</button>
+                            </div>
+                            }
+                            else{
+                            <div class="cart mt-4 align-items-center">
+                            <button class="btn btn-warning text-uppercase mr-2 px-4" id="removeWishList">Remove WishList</button>
+                            </div>
+                            }*@
+                            <div class="cart mt-4 align-items-center row">
+                                <div class="col-md-5">
+                                    <button class="btn btn-primary text-uppercase mr-2 px-4 " id="lienhe" style="width:95%;">Liên hệ</button>
+                                </div>
+                                <div class="col-md-7">
+                                    <button class="btn btn-warning text-uppercase mr-2 px-4 " id="btn-mua" data-id="@Model.Id" data-mau="" data-gia="" style="width:95%;">Thêm vào giỏ hàng</button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-4">
+    <div class="tabs">
+        <div class="tab-2">
+            <label for="tab2-1">Thông số kỹ thuật</label>
+            <input id="tab2-1" name="tabs-two" type="radio" checked="checked">
+            <div id="thongso">
+               @* @Model.ProductDetails*@
+                @Html.Raw(Model.ProductDetails)
+            </div>
+        </div>
+        <div class="tab-2" @*@(check ? "" : "hidden")*@>
+            <label for="tab2-2">Đánh Giá Sản Phẩm</label>
+            <input id="tab2-2" name="tabs-two" type="radio">
+            <div>
+                 <div class="row">
+                    <div class="col-md-12">
+                        <div class="card">
+                            @foreach (var item in listReview)
+                            {
+                                <div class="comment-widgets m-b-20">
+                                    <div class="d-flex flex-row comment-row">
+                                        <div class="p-2">
+                                            <span class="round">
+                                                <img src="https://i.imgur.com/cAdLHeY.jpg" alt="user"
+                                                 width="50">
+                                            </span>
+                                        </div>
+                                        <div class="comment-text w-100">
+                                            <h5>@item.User.UserName</h5>
+                                            <div class="comment-footer">
+                                                <div class="date">@item.CreateAt.ToString("dd/MM/yyyy")</div>
+                                            </div>
+                                            <p class="m-b-5 m-t-10">
+                                                @item.ReviewsDetails
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            @*<div class="comment-widgets m-b-20">
+                            <div class="d-flex flex-row comment-row">
+                            <div class="p-2">
+                            <span class="round">
+                            <img src="https://i.imgur.com/cAdLHeY.jpg" alt="user"
+                            width="50">
+                            </span>
+                            </div>
+                            <div class="comment-text w-100">
+                            <h5>Sarah Tim</h5>
+                            <div class="comment-footer">
+                            <div class="date">14 - 8 - 2022</div>
+                            </div>
+                            <p class="m-b-5 m-t-10">
+                            There are many variations of passages of Lorem
+                            Ipsum available,
+                            but the majority have suffered alteration in some form, by injected
+                            humour, or
+                            randomised words which don't look even slightly believable. If you
+                            are going to use
+                            a passage of Lorem Ipsum, you need to be sure
+                            </p>
+                            </div>
+                            </div>
+                            </div>*@
+                        </div>
+
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <textarea class="form-control" id="review" rows="3"></textarea>
+                </div>
+                <div class="mb-3">
+                    <button class="btn btn-info" id="addReview">Đánh giá</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Button trigger modal -->
+<!-- Modal -->
+<div class="modal fade" id="dathang" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Để lại số điện thoại</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-lien-he">
+                    <input class="form-control mt-3" type="number" placeholder="Số điện thoại" id="sdt" name="sdt">
+                    <input class="form-control mt-3" type="text" placeholder="Tên" id="ten" name="ten">
+                </form>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" id="themlienhe">Thêm liên hệ</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section Heads{
+    <link href="~/user/css/productdetails.css" rel="stylesheet" />
+}
+
+    @section Scripts{
+    <script src="~/cart/cart.js"></script>
+    <script>
+        var cartController = new CartController();
+        cartController.initialize();
+    </script>
+    <script>
+        var stringToHTML = function (str) {
+            var d = $(str);
+            return d;
+        }
+        var cur = function (amt) {
+            return Intl.NumberFormat('en-US', { style: "currency", currency: "VND" }).format(amt);
+        };
+        function change_image(image) {
+            var container = document.getElementById("main-image");
+            container.src = image.src;
+        }
+        document.addEventListener("DOMContentLoaded", function (event) {
+        });
+
+        $(document).ready(function () {
+             //$("#thongso").html(`${@Model.ProductDetails}`);
+            //thongSo.innerHTML = @Model.ProductDetails
+            $(".gia").first().addClass("btn-success text-white")
+            $("#gia-xe").text(cur($($(".gia").first()).attr("data-gia")));
+            $("#btn-mua").attr("data-gia", $($(".gia").first()).attr("data-gia"));
+            $("#btn-mua").attr("data-mau", $($(".gia").first()).attr("data-mau"));
+
+            $(".gia").click(function(){
+                $(".gia").removeClass("btn-success text-white")
+                $(this).addClass("btn-success text-white")
+                $("#gia-xe").text(cur($($(this)).attr("data-gia")));
+                $("#btn-mua").attr("data-gia", $(this).attr("data-gia"));
+                $("#btn-mua").attr("data-mau", $(this).attr("data-mau"));
+            })
+
+            $("#btn-mua").click(function(){
+                let id = $(this).data('id');
+                let gia = $(this).attr("data-gia");
+                let mau = $(this).attr("data-mau");
+                addToCard(id, mau, gia)
+            })
+
+            $("#form-lien-he").validate({
+                rules: {
+                    sdt: {
+                        required: true,
+                        rangelength: [10, 10]
+                    },
+                    ten: {
+                        required: true
+                    }
+                },
+                messages: {
+                    sdt: {
+                        required: "Số điện thoại không được để trống",
+                        rangelength: "Số điện thoại chỉ được 10 kí tự số"
+                    },
+                    ten: {
+                        required: "Tên không được để trống"
+                    }
+                }
+            })
+            $("#detail").html('<p></p>');
+            $("#addReview").click(function () {
+                var review = $("#review").val();
+                if (review == '') {
+                    Swal.fire('Bạn chưa nhập nội dung')
+                }
+                else {
+                    $.ajax({
+                        type: "POST",
+                        url: '@Url.Action("AddReview", "Product")',
+                        data: { review: review, id: @Model.Id },
+                        //dataType: "json",
+                        //contentType: "application/json;charset=utf-8",
+                        success: function (response) {
+                            if (!response.result) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Oops...',
+                                    text: response.mess,
+
+                                })
+                            }
+                            else {
+                                Swal.fire({
+                                    position: 'top-end',
+                                    icon: 'success',
+                                    title: 'Thêm đánh giá thành công',
+                                    showConfirmButton: false,
+                                    timer: 2500
+                                });
+                                setTimeout(() => location.href = '@Url.Action("Index", "Product")', 2500);
+                            }
+                        }
+                    })
+                }
+            })
+
+            $("#addWishList").click(function () {
+                $.ajax({
+                    type: "POST",
+                    url: '@Url.Action("AddWishList", "Product")',
+                    data: { id: @Model.Id },
+                    //dataType: "json",
+                    //contentType: "application/json;charset=utf-8",
+                    success: function (response) {
+                        if (!response.result) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Oops...',
+                                text: response.mess,
+
+                            })
+                        }
+                        else {
+                            Swal.fire({
+                                position: 'top-end',
+                                icon: 'success',
+                                title: 'Thêm WishList thành công',
+                                showConfirmButton: false,
+                                timer: 2500
+                            });
+                            setTimeout(() => location.href = '@Url.Action("Index", "Product")', 2500);
+                        }
+                    }
+                })
+            })
+
+            $("#removeWishList").click(function () {
+                Swal.fire({
+                    title: 'Thông báo!',
+                    text: "Bạn có thực sự muốn xóa hay không?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Yes, delete it!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            type: "POST",
+                            url: '@Url.Action("RemoveWishList", "Product")',
+                            data: { id: @Model.Id },
+                            //dataType: "json",
+                            //contentType: "application/json;charset=utf-8",
+                            success: function (response) {
+                                if (!response.result) {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Oops...',
+                                        text: response.mess,
+
+                                    })
+                                }
+                                else {
+                                    Swal.fire(
+                                        'Deleted!',
+                                        'Đã Xóa Sản Phẩm Khỏi WishList',
+                                        'success'
+                                    )
+                                    setTimeout(() => location.href = '@Url.Action("Index", "Product")', 2000);
+                                }
+                            }
+                        })
+
+                    }
+                })
+
+            })
+        });
+
+        $("#lienhe").click(function () {
+            $("#dathang").modal('show');
+        })
+
+        $("#themlienhe").click(function () {
+            if ($("#form-lien-he").valid()) {
+                $.ajax({
+                    type: "POST",
+                    url: '@Url.Action("ThemLienHe", "Product")',
+                    data: { ten: $("#ten").val(), sdt: $("#sdt").val(), id: @Model.Id },
+                    //dataType: "json",
+                    //contentType: "application/json;charset=utf-8",
+                    success: function (response) {
+                        if (!response.result) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Oops...',
+                                text: response.mess,
+
+                            })
+                        }
+                        else {
+                            Swal.fire({
+                                position: 'top-end',
+                                icon: 'success',
+                                title: 'Gửi liên hệ thành công',
+                                showConfirmButton: false,
+                                timer: 2500
+                            });
+                            $("#dathang").modal('hide');
+                        }
+                    }
+                })
+            }
+        })
+    </script>
+}
